@@ -27,15 +27,16 @@ public class Registrate extends AbstractRegistrate<Registrate> {
                 .map(ModContainer::getEventBus);
         
         modEventBus.ifPresentOrElse(ret::registerEventListeners, () -> {
-            String message = "# [Registrate] Failed to register eventListeners for mod " + modid + ", This should be reported to this mod's dev #";
+            String message = "# [Registrate] Failed to register eventListeners for mod {} , This should be reported to this mod's dev #";
 
             
-            StringBuilder hashtags = new StringBuilder().append("#".repeat(message.length()));
-            
+            StringBuilder hashtags = new StringBuilder().append("#".repeat(message.length() - 2 + modid.length()));
+
             log.fatal(hashtags.toString());
-            log.fatal(message);
+            log.fatal(message, modid);
             log.fatal(hashtags.toString());
         });
+        log.info("# [Registrate] Detected mc version: {}", ret.mcVersion());
 
         return ret;
     }
