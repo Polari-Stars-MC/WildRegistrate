@@ -4,11 +4,17 @@ import lombok.extern.log4j.Log4j2;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.ModContainer;
 import net.neoforged.fml.ModList;
+import net.neoforged.fml.loading.FMLLoader;
+import net.neoforged.neoforge.common.NeoForge;
+import net.neoforged.neoforge.common.NeoForgeMod;
 
 import java.util.Optional;
 
 @Log4j2
 public class Registrate extends AbstractRegistrate<Registrate> {
+    public String mcVersion() {
+        return FMLLoader.versionInfo().mcVersion();
+    }
     /**
      * Create a new {@link Registrate} and register event listeners for registration and data generation. Used in lieu of adding side-effects to constructor, so that alternate initialization
      * strategies can be done in subclasses.
@@ -25,7 +31,6 @@ public class Registrate extends AbstractRegistrate<Registrate> {
         
         modEventBus.ifPresentOrElse(ret::registerEventListeners, () -> {
             String message = "# [Registrate] Failed to register eventListeners for mod " + modid + ", This should be reported to this mod's dev #";
-
             
             StringBuilder hashtags = new StringBuilder().append("#".repeat(message.length()));
             

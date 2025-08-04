@@ -223,6 +223,7 @@ public abstract class AbstractRegistrate<S extends AbstractRegistrate<S>> {
             this.modEventBus = bus;
         }
 
+
         Consumer<RegisterEvent> onRegister = this::onRegister;
         Consumer<RegisterEvent> onRegisterLate = this::onRegisterLate;
         bus.addListener(onRegister);
