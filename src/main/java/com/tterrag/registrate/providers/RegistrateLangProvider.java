@@ -3,6 +3,10 @@ package com.tterrag.registrate.providers;
 import com.tterrag.registrate.AbstractRegistrate;
 import com.tterrag.registrate.util.nullness.NonNullSupplier;
 import com.tterrag.registrate.util.nullness.NonnullType;
+import net.neoforged.fml.LogicalSide;
+import net.neoforged.neoforge.common.data.LanguageProvider;
+import org.apache.commons.lang3.StringUtils;
+
 import net.minecraft.core.Registry;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.core.registries.Registries;
@@ -15,9 +19,6 @@ import net.minecraft.world.item.CreativeModeTab;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.level.ItemLike;
 import net.minecraft.world.level.block.Block;
-import net.neoforged.fml.LogicalSide;
-import net.neoforged.neoforge.common.data.LanguageProvider;
-import org.apache.commons.lang3.StringUtils;
 
 import javax.annotation.Nullable;
 import java.util.Arrays;
@@ -74,9 +75,9 @@ public class RegistrateLangProvider extends LanguageProvider implements Registra
                 .collect(Collectors.joining(" "));
     }
 
-    @SuppressWarnings({"unchecked", "ConstantConditions"})
+    @SuppressWarnings("unchecked")
     public <T> String getAutomaticName(NonNullSupplier<? extends T> sup, ResourceKey<? extends Registry<T>> registry) {
-        return toEnglishName(((Registry<Registry<T>>) BuiltInRegistries.REGISTRY).getValue(registry.location()).getKey(sup.get()).getPath());
+        return toEnglishName(((Registry<Registry<T>>) BuiltInRegistries.REGISTRY).get(registry.location()).getKey(sup.get()).getPath());
     }
 
     public void addBlock(NonNullSupplier<? extends Block> block) {

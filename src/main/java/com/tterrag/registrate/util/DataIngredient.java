@@ -1,22 +1,32 @@
 package com.tterrag.registrate.util;
 
+import java.util.Arrays;
+import java.util.List;
+import java.util.function.Function;
+import java.util.function.Supplier;
+import java.util.stream.Stream;
+
 import com.google.common.collect.ObjectArrays;
-import com.tterrag.registrate.providers.generators.RegistrateRecipeProvider;
+import com.mojang.serialization.MapCodec;
+import com.mojang.serialization.codecs.RecordCodecBuilder;
+import com.tterrag.registrate.providers.RegistrateRecipeProvider;
 import com.tterrag.registrate.util.nullness.NonNullSupplier;
+
 import lombok.Getter;
+import lombok.experimental.Delegate;
 import net.minecraft.advancements.Criterion;
 import net.minecraft.advancements.critereon.InventoryChangeTrigger;
 import net.minecraft.advancements.critereon.ItemPredicate;
 import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.tags.TagKey;
 import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.crafting.Ingredient;
 import net.minecraft.world.level.ItemLike;
-
-import java.util.Arrays;
-import java.util.function.Function;
-import java.util.function.Supplier;
+import net.neoforged.neoforge.common.crafting.ICustomIngredient;
+import net.neoforged.neoforge.common.crafting.IngredientType;
 
 /**
  * A helper for data generation when using ingredients as input(s) to recipes.<br>
@@ -27,8 +37,22 @@ import java.util.function.Supplier;
  * <strong>This class should not be used for any purpose other than data generation</strong>, it will throw an exception if it is serialized to a packet buffer.
  */
 public final class DataIngredient {
+    private interface Excludes {
 
-    //TODO <1.21.4> removed delegate. Is there a need to add it back?
+        void toNetwork(FriendlyByteBuf buffer);
+
+        boolean checkInvalidation();
+
+        void markValid();
+
+        boolean isVanilla();
+
+        ItemStack[] getItems();
+
+        Ingredient.Value[] getValues();
+    }
+
+    @Delegate(excludes = Excludes.class)
     private final Ingredient parent;
     @Getter
     private final ResourceLocation id;
@@ -37,13 +61,13 @@ public final class DataIngredient {
     private DataIngredient(Ingredient parent, ItemLike item) {
         this.parent = parent;
         this.id = BuiltInRegistries.ITEM.getKey(item.asItem());
-        this.criteriaFactory = prov -> prov.has(item);
+        this.criteriaFactory = prov -> RegistrateRecipeProvider.has(item);
     }
     
     private DataIngredient(Ingredient parent, TagKey<Item> tag) {
         this.parent = parent;
         this.id = tag.location();
-        this.criteriaFactory = prov -> prov.has(tag);
+        this.criteriaFactory = prov -> RegistrateRecipeProvider.has(tag);
     }
     
     private DataIngredient(Ingredient parent, ResourceLocation id, ItemPredicate... predicates) {
@@ -67,8 +91,12 @@ public final class DataIngredient {
         return ingredient(Ingredient.of(ObjectArrays.concat(first, others)), first);
     }
 
+    public static DataIngredient stacks(ItemStack first, ItemStack... others) {
+        return ingredient(Ingredient.of(ObjectArrays.concat(first, others)), first.getItem());
+    }
+
     public static DataIngredient tag(TagKey<Item> tag) {
-        return ingredient(Ingredient.of(BuiltInRegistries.ITEM.getOrThrow(tag)), tag);
+        return ingredient(Ingredient.of(tag), tag);
     }
     
     public static DataIngredient ingredient(Ingredient parent, ItemLike required) {

@@ -1,17 +1,23 @@
 package com.tterrag.registrate.builders;
 
+import java.util.function.Function;
+
 import com.tterrag.registrate.AbstractRegistrate;
 import com.tterrag.registrate.providers.DataGenContext;
-import com.tterrag.registrate.providers.GeneratorType;
 import com.tterrag.registrate.providers.ProviderType;
+import com.tterrag.registrate.providers.RegistrateProvider;
 import com.tterrag.registrate.util.entry.RegistryEntry;
-import com.tterrag.registrate.util.nullness.*;
-import net.minecraft.core.HolderLookup;
+import com.tterrag.registrate.util.nullness.NonNullBiConsumer;
+import com.tterrag.registrate.util.nullness.NonNullConsumer;
+import com.tterrag.registrate.util.nullness.NonNullFunction;
+import com.tterrag.registrate.util.nullness.NonNullSupplier;
+
 import net.minecraft.core.Registry;
 import net.minecraft.resources.ResourceKey;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.item.Item;
 import net.neoforged.neoforge.registries.datamaps.DataMapType;
-
-import java.util.function.Function;
+import net.neoforged.neoforge.registries.datamaps.builtin.FurnaceFuel;
 
 /**
  * A Builder creates registry entries. A Builder instance has a constant name which will be used for the resultant object, they cannot be reused for different names. It holds a parent object that will
@@ -103,13 +109,13 @@ public interface Builder<R, T extends R, P, S extends Builder<R, T, P, S>> exten
      * @param <D>
      *            The type of provider
      * @param type
-     *            The {@link GeneratorType} for the desired provider
+     *            The {@link ProviderType} for the desired provider
      * @param cons
      *            The callback to execute when the provider is run
      * @return this builder
      */
     @SuppressWarnings("unchecked")
-    default <D> S setData(GeneratorType<? extends D> type, NonNullBiConsumer<DataGenContext<R, T>, D> cons) {
+    default <D extends RegistrateProvider> S setData(ProviderType<? extends D> type, NonNullBiConsumer<DataGenContext<R, T>, D> cons) {
         getOwner().setDataGenerator(this, type, prov -> cons.accept(DataGenContext.from(this), prov));
         return (S) this;
     }
@@ -122,13 +128,13 @@ public interface Builder<R, T extends R, P, S extends Builder<R, T, P, S>> exten
      * @param <D>
      *            The type of provider
      * @param type
-     *            The {@link GeneratorType} for the desired provider
+     *            The {@link ProviderType} for the desired provider
      * @param cons
      *            The callback to execute when the provider is run
      * @return this builder
      */
     @SuppressWarnings("unchecked")
-    default <D> S addMiscData(GeneratorType<? extends D> type, NonNullConsumer<? extends D> cons) {
+    default <D extends RegistrateProvider> S addMiscData(ProviderType<? extends D> type, NonNullConsumer<? extends D> cons) {
         getOwner().addDataGenerator(type, cons);
         return (S) this;
     }
@@ -136,34 +142,9 @@ public interface Builder<R, T extends R, P, S extends Builder<R, T, P, S>> exten
     /**
      * Add data map associated with this builder
      */
-    @SuppressWarnings("unchecked")
     default <D> S dataMap(DataMapType<R, D> type, D val) {
         getOwner().addDataGenerator(ProviderType.DATA_MAP, e -> e.builder(type)
                 .add(DataGenContext.from(this).getId(), val, false));
-        return (S) this;
-    }
-
-    /**
-     * Add data map associated with this builder, with context
-     */
-    @SuppressWarnings("unchecked")
-    default <D> S dataMap(DataMapType<R, D> type, NonNullFunction<DataGenContext<R, T>, D> factory) {
-        getOwner().addDataGenerator(ProviderType.DATA_MAP, e -> {
-            var ctx = DataGenContext.from(this);
-            e.builder(type).add(ctx.getId(), factory.apply(ctx), false);
-        });
-        return (S) this;
-    }
-
-    /**
-     * Add data map associated with this builder, with context
-     */
-    @SuppressWarnings("unchecked")
-    default <D> S dataMap(DataMapType<R, D> type, NonNullBiFunction<DataGenContext<R, T>, HolderLookup.Provider, D> factory) {
-        getOwner().addDataGenerator(ProviderType.DATA_MAP, e -> {
-            var ctx = DataGenContext.from(this);
-            e.builder(type).add(ctx.getId(), factory.apply(ctx, e.getProvider()), false);
-        });
         return (S) this;
     }
 

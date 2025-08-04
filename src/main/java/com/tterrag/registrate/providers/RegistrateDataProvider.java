@@ -7,18 +7,17 @@ import com.tterrag.registrate.AbstractRegistrate;
 import com.tterrag.registrate.util.DebugMarkers;
 import com.tterrag.registrate.util.nullness.NonnullType;
 import lombok.extern.log4j.Log4j2;
+
 import net.minecraft.core.HolderLookup;
 import net.minecraft.core.Registry;
 import net.minecraft.data.CachedOutput;
 import net.minecraft.data.DataProvider;
 import net.minecraft.resources.ResourceKey;
+import net.neoforged.fml.LogicalSide;
 import net.neoforged.neoforge.data.event.GatherDataEvent;
 
 import javax.annotation.Nullable;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
@@ -31,23 +30,18 @@ public class RegistrateDataProvider implements DataProvider {
 
     static final Map<ResourceKey<? extends Registry<?>>, ProviderType<?>> TAG_TYPES = new ConcurrentHashMap<>();
 
-    public static @Nullable String getTypeName(GeneratorType<?> type) {
-        if (type instanceof ProviderType<?> prov)
-            return TYPES.inverse().get(prov);
-        return type.toString();
+    public static @Nullable String getTypeName(ProviderType<?> type) {
+        return TYPES.inverse().get(type);
     }
 
     private final String mod;
     private final Map<ProviderType<?>, RegistrateProvider> subProviders = new LinkedHashMap<>();
-    private final Map<GeneratorType<?>, Object> subGenerators = new LinkedHashMap<>();
     private final CompletableFuture<HolderLookup.Provider> registriesLookup;
 
     public RegistrateDataProvider(AbstractRegistrate<?> parent, String modid, GatherDataEvent event) {
         this.mod = modid;
         this.registriesLookup = event.getLookupProvider();
 
-        // For now, generate everything together
-        /*
         EnumSet<LogicalSide> sides = EnumSet.noneOf(LogicalSide.class);
         if (event.includeServer()) {
             sides.add(LogicalSide.SERVER);
@@ -55,10 +49,8 @@ public class RegistrateDataProvider implements DataProvider {
         if (event.includeClient()) {
             sides.add(LogicalSide.CLIENT);
         }
-        */
 
-        //log.debug(DebugMarkers.DATA, "Gathering providers for sides: {}", sides);
-        log.debug(DebugMarkers.DATA, "Gathering providers");
+        log.debug(DebugMarkers.DATA, "Gathering providers for sides: {}", sides);
         Map<ProviderType<?>, RegistrateProvider> known = new HashMap<>();
         for (DataProviderInitializer.Sorted sorted :parent.getDataGenInitializer().getSortedProviders()) {
             ProviderType<?> type = sorted.type();
@@ -69,10 +61,10 @@ public class RegistrateDataProvider implements DataProvider {
 				throw new IllegalStateException("Tag providers must be registered through ProviderType::registerTag");
             }
             known.put(type, prov);
-            // if (sides.contains(prov.getSide())) {
+            if (sides.contains(prov.getSide())) {
                 log.debug(DebugMarkers.DATA, "Adding provider for type: {}", sorted.id());
                 subProviders.put(type, prov);
-            //}
+            }
         }
     }
 
@@ -96,14 +88,7 @@ public class RegistrateDataProvider implements DataProvider {
     }
 
     @SuppressWarnings("unchecked")
-    public <P> Optional<P> getSubProvider(GeneratorType<P> type) {
-        if (type instanceof ProviderType<?> prov)
-            return Optional.ofNullable((P) subProviders.get(prov));
-        return Optional.ofNullable((P) subGenerators.get(type));
+    public <P extends RegistrateProvider> Optional<P> getSubProvider(ProviderType<P> type) {
+        return Optional.ofNullable((P) subProviders.get(type));
     }
-
-    public <T> void putSubProvider(GeneratorType<? extends T> type, T gen) {
-        subGenerators.put(type, gen);
-    }
-
 }

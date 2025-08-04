@@ -12,7 +12,7 @@ import net.minecraft.resources.ResourceKey;
 import net.neoforged.neoforge.registries.DeferredHolder;
 
 /**
- * Wraps a {@link net.neoforged.neoforge.registries.DeferredHolder}, providing a cleaner API with null-safe access, and registrate-specific extensions such as {@link #getSibling(ResourceKey)}.
+ * Wraps a {@link DeferredHolder}, providing a cleaner API with null-safe access, and registrate-specific extensions such as {@link #getSibling(ResourceKey)}.
  *
  * @param <S>
  *            The type of the entry

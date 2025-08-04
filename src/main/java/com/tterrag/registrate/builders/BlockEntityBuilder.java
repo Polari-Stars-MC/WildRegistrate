@@ -136,7 +136,8 @@ public class BlockEntityBuilder<T extends BlockEntity, P> extends AbstractBuilde
     protected BlockEntityType<T> createEntry() {
         BlockEntityFactory<T> factory = this.factory;
         final var supplier = asSupplier();
-        return new BlockEntityType<>((pos, state) -> factory.create(supplier.get(), pos, state), validBlocks.stream().map(NonNullSupplier::get).toArray(Block[]::new));
+        return BlockEntityType.Builder.of((pos, state) -> factory.create(supplier.get(), pos, state), validBlocks.stream().map(NonNullSupplier::get).toArray(Block[]::new))
+                .build(null);
     }
 
     @Override

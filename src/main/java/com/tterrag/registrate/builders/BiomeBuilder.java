@@ -1,4 +1,4 @@
-//package com.tterrag.registrate.builders;
+package com.tterrag.registrate.builders;//package com.tterrag.registrate.builders;
 //
 //import java.util.Arrays;
 //import java.util.EnumSet;

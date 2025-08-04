@@ -1,5 +1,12 @@
 package com.tterrag.registrate.test.mod;
 
+import java.util.OptionalLong;
+import java.util.Set;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Consumer;
+
+import javax.annotation.Nullable;
+
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.tterrag.registrate.Registrate;
 import com.tterrag.registrate.builders.BlockBuilder;
@@ -7,13 +14,11 @@ import com.tterrag.registrate.providers.ProviderType;
 import com.tterrag.registrate.util.DataIngredient;
 import com.tterrag.registrate.util.entry.*;
 import com.tterrag.registrate.util.nullness.NonnullType;
+
 import net.minecraft.advancements.Advancement;
 import net.minecraft.advancements.AdvancementType;
 import net.minecraft.advancements.critereon.InventoryChangeTrigger;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.color.item.Constant;
-import net.minecraft.client.color.item.ItemTintSource;
-import net.minecraft.client.color.item.ItemTintSources;
 import net.minecraft.client.gui.screens.inventory.ContainerScreen;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.RenderType;
@@ -25,6 +30,7 @@ import net.minecraft.core.Registry;
 import net.minecraft.core.RegistrySetBuilder;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.data.recipes.RecipeCategory;
+import net.minecraft.data.recipes.ShapedRecipeBuilder;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
@@ -46,7 +52,12 @@ import net.minecraft.world.food.FoodProperties;
 import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.inventory.ChestMenu;
 import net.minecraft.world.inventory.MenuType;
-import net.minecraft.world.item.*;
+import net.minecraft.world.item.BlockItem;
+import net.minecraft.world.item.CreativeModeTab;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemDisplayContext;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.biome.Biomes;
 import net.minecraft.world.level.biome.FixedBiomeSource;
@@ -73,20 +84,15 @@ import net.minecraft.world.level.storage.loot.functions.SetItemCountFunction;
 import net.minecraft.world.level.storage.loot.providers.number.ConstantValue;
 import net.minecraft.world.level.storage.loot.providers.number.UniformGenerator;
 import net.minecraft.world.phys.BlockHitResult;
-import net.minecraft.world.phys.Vec3;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.common.Mod;
 import net.neoforged.fml.event.lifecycle.FMLCommonSetupEvent;
+import net.neoforged.neoforge.client.extensions.common.IClientFluidTypeExtensions;
 import net.neoforged.neoforge.common.data.DatapackBuiltinEntriesProvider;
 import net.neoforged.neoforge.event.entity.RegisterSpawnPlacementsEvent;
 import net.neoforged.neoforge.fluids.BaseFlowingFluid;
 import net.neoforged.neoforge.fluids.FluidType;
 import net.neoforged.neoforge.registries.RegistryBuilder;
-
-import javax.annotation.Nullable;
-import java.util.OptionalLong;
-import java.util.Set;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 @Mod("testmod")
 public class TestMod {
@@ -143,7 +149,7 @@ public class TestMod {
         }
 
         @Override
-        public void render(TestBlockEntity blockEntityIn, float partialTicks, PoseStack matrixStackIn, MultiBufferSource bufferIn, int combinedLightIn, int combinedOverlayIn, Vec3 cam) {
+        public void render(TestBlockEntity blockEntityIn, float partialTicks, PoseStack matrixStackIn, MultiBufferSource bufferIn, int combinedLightIn, int combinedOverlayIn) {
             matrixStackIn.pushPose();
             matrixStackIn.translate(0.5, 0.5, 0.5);
             Minecraft.getInstance().getItemRenderer().renderStatic(new ItemStack(Items.DIAMOND), ItemDisplayContext.GROUND, combinedLightIn, combinedOverlayIn, matrixStackIn, bufferIn, blockEntityIn.getLevel(), 0);
@@ -179,8 +185,9 @@ public class TestMod {
             .item(Item::new)
                 .onRegister(item -> sawCallback.set(true))
                 .properties(p -> p.food(new FoodProperties.Builder().nutrition(1).saturationModifier(0.2f).build()))
+                .color(() -> () -> (stack, index) -> 0xFF0000FF)
                 .tag(ItemTags.BEDS)
-            .model(() -> (ctx, prov) -> prov.createWithExistingModel(ctx.getEntry(), prov.mcLoc("block/stone")))
+                .model((ctx, prov) -> prov.withExistingParent(ctx.getName(), ResourceLocation.withDefaultNamespace("block/stone")))
                 .tab(testcreativetab.getKey(), (ctx, modifier) -> modifier.accept(ctx))
                 .register();
 
@@ -194,14 +201,11 @@ public class TestMod {
     private final BlockEntry<TestBlock> testblock = registrate.object("testblock")
             .block(TestBlock::new)
                 .properties(p -> p.noOcclusion())
-            .blockstate(() -> (ctx, prov) -> prov.create(ctx.getEntry(),
-                    prov.getBuilder().transformTemplate(template -> template
-                            .parent(prov.mcLoc("block/glass"))
-                            .renderType(prov.mcLoc("cutout"))).build(ctx.getEntry())
-            ))
+                .blockstate((ctx, prov) -> prov.simpleBlock(ctx.getEntry(),
+                                prov.models().withExistingParent(ctx.getName(), ResourceLocation.withDefaultNamespace("block/glass")).renderType(prov.mcLoc("cutout"))))
                 .transform(TestMod::applyDiamondDrop)
                 .recipe((ctx, prov) -> {
-                    prov.shaped(RecipeCategory.MISC, ctx.getEntry())
+                    ShapedRecipeBuilder.shaped(RecipeCategory.MISC, ctx.getEntry())
                             .pattern("DDD").pattern("DED").pattern("DDD")
                             .define('D', Items.DIAMOND)
                             .define('E', Items.EGG)
@@ -214,7 +218,8 @@ public class TestMod {
                 .tag(BlockTags.WITHER_IMMUNE)
                 .color(() -> () -> (state, world, pos, index) -> 0xFFFF0000)
                 .item()
-            .model(() -> (ctx, prov) -> prov.generateTintedModel(ctx.get(), prov.mcLoc("item/egg"), new Constant(0xFFFF0000)))
+                    .color(() -> () -> (stack, index) -> 0xFFFF0000)
+                    .model((ctx, prov) -> prov.withExistingParent(ctx.getName(), ResourceLocation.withDefaultNamespace("item/egg")))
                     .build()
                 .blockEntity(TestBlockEntity::new)
                     .renderer(() -> TestBlockEntityRenderer::new)
@@ -223,12 +228,9 @@ public class TestMod {
 
     private final BlockEntry<Block> magicItemModelTest = registrate.object("magic_item_model")
             .block(Block::new)
-            .blockstate(() -> (ctx, prov) ->
-                    prov.create(ctx.getEntry(), prov.getBuilder()
-                            .transformTemplate(t -> t
-                                    .parent(prov.mcLoc("block/gold_block"))
-                            ).build(prov.modLoc("block/subfolder/" + ctx.getName()))))
-            .simpleItem()//TODO <1.21.4> automatic inheritance of block model is not supported yet
+            .blockstate((ctx, prov) -> prov.simpleBlock(ctx.getEntry(),
+                    prov.models().withExistingParent("block/subfolder/" + ctx.getName(), prov.mcLoc("block/gold_block"))))
+            .simpleItem()
             .register();
 
     private final ItemEntry<BlockItem> testblockitem = (ItemEntry<BlockItem>) testblock.<Item, BlockItem>getSibling(Registries.ITEM);
@@ -240,7 +242,7 @@ public class TestMod {
             .attributes(Pig::createAttributes)
             .renderer(() -> PigRenderer::new)
             .spawnPlacement(SpawnPlacementTypes.ON_GROUND, Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, Animal::checkAnimalSpawnRules, RegisterSpawnPlacementsEvent.Operation.OR)
-            //TODO <1.21.4> .defaultSpawnEgg(0xFF0000, 0x00FF00)
+            .defaultSpawnEgg(0xFF0000, 0x00FF00)
             .loot((prov, type) -> prov.add(type, LootTable.lootTable()
                     .withPool(LootPool.lootPool()
                             .setRolls(ConstantValue.exactly(1))
@@ -252,14 +254,27 @@ public class TestMod {
 
     private final BlockEntityEntry<TestDummyBlockEntity> testblockentity = registrate.object("testblockentity")
             .blockEntity(TestDummyBlockEntity::new)
-            .validBlock(() -> Blocks.DIRT)//TODO <1.21.4> now empty valid block is not allowed
             .register();
 
+    @SuppressWarnings("Convert2MethodRef")
     private final FluidEntry<BaseFlowingFluid.Flowing> testfluid = registrate.object("testfluid")
-            .fluid(
-                    ResourceLocation.withDefaultNamespace("block/water_flow"),
-                    ResourceLocation.withDefaultNamespace("block/lava_still"),
-					FluidType::new)
+            .fluid(ResourceLocation.withDefaultNamespace("block/water_flow"), ResourceLocation.withDefaultNamespace("block/lava_still"), (props, still, flow) -> new FluidType(props) {
+                // And now you can do custom behaviours.
+                @Override
+                public void initializeClient(Consumer<IClientFluidTypeExtensions> consumer) {
+                    consumer.accept(new IClientFluidTypeExtensions() {
+                        @Override
+                        public ResourceLocation getStillTexture() {
+                            return still;
+                        }
+
+                        @Override
+                        public ResourceLocation getFlowingTexture() {
+                            return flow;
+                        }
+                    });
+                }
+            })
             .properties(p -> p.lightLevel(15).canConvertToSource(true))
             .renderType(() -> RenderType::translucent)
             .noBucket()

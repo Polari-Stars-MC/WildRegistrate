@@ -56,7 +56,9 @@ runs {
     if(
             project.name != "1.21.1"
                     && project.name != "1.21.2"
-                    && project.name != "1.21.3") {
+                    && project.name != "1.21.3"
+                    && project.name != "1.21.0"
+    ) {
         clientData {
             workingDirectory project.file('run')
 
