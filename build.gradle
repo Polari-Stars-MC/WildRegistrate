@@ -53,10 +53,22 @@ runs {
         programArguments '--nogui'
     }
 
-    clientData {
-        workingDirectory project.file('run')
+    if(
+            project.name != "1.21.1"
+                    && project.name != "1.21.2"
+                    && project.name != "1.21.3") {
+        clientData {
+            workingDirectory project.file('run')
 
-        programArguments.addAll '--mod', 'testmod', '--all', '--output', rootProject.file('src/generated/resources/').getAbsolutePath(), '--existing', rootProject.file('src/test/resources').getAbsolutePath()
+            programArguments.addAll '--mod', 'testmod', '--all', '--output', rootProject.file('src/generated/resources/').getAbsolutePath(), '--existing', rootProject.file('src/test/resources').getAbsolutePath()
+        }
+    } else {
+        data {
+
+            workingDirectory project.file('run')
+
+            programArguments.addAll '--mod', 'testmod', '--all', '--output', rootProject.file('src/generated/resources/').getAbsolutePath(), '--existing', rootProject.file('src/test/resources').getAbsolutePath()
+        }
     }
 }
 

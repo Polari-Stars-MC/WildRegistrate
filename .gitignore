@@ -3,11 +3,11 @@
 /logs
 
 ## gradle
-/.gradle
-/build
+**/.gradle
+**/build
 
 ## ForgeGradle
-/run
+**/run
 /*.launch
 
 ## eclipse
@@ -29,4 +29,4 @@
 *~
 /revapi-standalone-0.11.5-standalone/
 
-runs/
+**/runs/
